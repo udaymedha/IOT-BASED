@@ -1,0 +1,84 @@
+#include <Wire.h>
+#include <FaBoLCD_PCF8574.h>
+static float twatt=0;
+// initialize the library
+FaBoLCD_PCF8574 lcd;
+const int sensorIn = A1;
+int mVperAmp = 185; // use 100 for 20A Module and 66 for 30A Module
+
+double Voltage = 0;
+double VRMS = 0;
+double AmpsRMS = 0;
+double I = 0;
+void setup(){ 
+ Serial.begin(9600);
+ lcd.begin(16, 2);
+lcd.setCursor(3,0);
+  // Print a message to the LCD.
+  lcd.print("WATT METER");
+}
+
+void loop(){
+float U = 240.0;
+ Voltage = getVPP();
+ VRMS = (Voltage/2.0) *0.707;  //root 2 is 0.707
+ //AmpsRMS = (((VRMS * 1000)/mVperAmp)-(0.10));
+ I = (((VRMS * 1000)/mVperAmp)-(0.11));
+ if(I<0){I=0;}
+  else{I=I;}
+  // To calculate the power we need voltage multiplied by current
+  float P = U * I;
+
+  
+if(P<0)
+{P=0;}
+  else
+  {P=P;}
+
+  twatt=twatt+((P/1000)/(3600));
+  
+lcd.clear();
+lcd.setCursor(0, 1);
+lcd.print("V:");
+lcd.print(U);
+lcd.setCursor(9, 1);
+lcd.print("A:");
+lcd.print(I);
+lcd.setCursor(0,0);
+lcd.print("W:");
+lcd.print(P);
+lcd.setCursor(8,0);
+lcd.print("U:");
+lcd.print(twatt);
+ Serial.print(I);
+ Serial.println(" Amps RMS");
+}
+
+float getVPP()
+{
+  float result;
+  int readValue;             //value read from the sensor
+  int maxValue = 0;          // store max value here
+  int minValue = 1024;          // store min value here
+  
+   uint32_t start_time = millis();
+   while((millis()-start_time) < 3000) //sample for 3 Sec
+   {
+       readValue = analogRead(sensorIn);
+       // see if you have a new maxValue
+       if (readValue > maxValue) 
+       {
+           /*record the maximum sensor value*/
+           maxValue = readValue;
+       }
+       if (readValue < minValue) 
+       {
+           /*record the minimum sensor value*/
+           minValue = readValue;
+       }
+   }
+   
+   // Subtract min from max
+   result = ((maxValue - minValue) * 5.0)/1024.0;   
+   return result;
+ }
